@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/1.7.22/fabric.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+<h1>手动区域检测Demo</h1>
+<br>
+
+<section  id="content">
+    <div id="shape-toolbox">
+        <div class="list-group">
+            <button type="button" class="list-group-item disabled">检测工具 </button>
+            <button type="button" value="点" class="list-group-item">点</button>
+            <button type="button" value="圆" class="list-group-item">圆</button>
+            <button type="button"  value="矩形" class="list-group-item">矩形</button>
+            <button type="button" value="clean" class="list-group-item">清除</button>
+        </div>
+    </div>
+    <div id="workshop">
+        <canvas id="cv"  width="800" height="400"></canvas>
+    </div>
+</section>
+
+<script>
+    //初始化画布
+  var canvas = new fabric.Canvas('cv');
+  var shapeCount = {
+    sum: 0,
+    rect: 0,
+    circle: 0,
+    point: 0,
+  };
+  var textArray  = [];
+  var isDrawing = false;
+  var mouseDownPoint = {
+    x: 0,
+    y: 0,
+  };
+  const unEnableDraw  =  '-1';
+  var ShapeEnum  = {
+    POINT:  '点',
+    CIRCLE:  '圆',
+    RECTANGLE: '矩形',
+  };
+  var currentShapeType = unEnableDraw;
+
+  configCanvas();
+  $(document).ready(function () {
+
+    $(".list-group-item").on('click',  function () {
+      if (this.value !== 'clean') {
+        //可绘制图像
+        console.log(this.value);
+        currentShapeType  =  this.value;
+      }
+    })
+  });
+
+  function configCanvas() {
+    canvas.backgroundColor  = 'red';
+    addStatisticsText(genStatisticsSting(38.17,  12, 30));
+
+    //  绑定鼠标绘图时间
+
+    //鼠标点击画布
+    canvas.on('mouse:down',function (opt) {
+      // 创建图像
+      if (currentShapeType !== unEnableDraw) {
+        e = opt.e;
+        mouseDownPoint.x  = e.offsetX;
+        mouseDownPoint.y = e.offsetY;
+        if (currentShapeType  === ShapeEnum.RECTANGLE){
+          drawRectangle(mouseDownPoint);
+          shapeCount.sum++;
+          shapeCount.rect++;
+        }
+        isDrawing = true
+      }
+    });
+
+    // 鼠标在画布上移动时
+
+    canvas.on('mouse:move',  function (opt) {
+      if (isDrawing) {
+        e = opt.e;
+        console.log(1 + 3 * (shapeCount.sum  -  1))
+        var shape = canvas.item(1 + 3 * (shapeCount.sum  -  1));
+        if (currentShapeType === ShapeEnum.RECTANGLE) {
+          shape.set({width: e.offsetX  -  mouseDownPoint.x,  height: e.offsetY -  mouseDownPoint.y})
+        }
+      }
+    });
+
+    // 鼠标在画布上弹起时
+    canvas.on('mouse:up', function () {
+
+      if (isDrawing) {
+       //  添加标注和标注跟随移动
+        var shape = canvas.item(1 + 3 * (shapeCount.sum  -  1));
+        //  初始化标注
+        var notation =  currentShapeType ;
+        switch (currentShapeType) {
+          case ShapeEnum.RECTANGLE:
+            notation = notation + shapeCount.rect;
+            break;
+          case ShapeEnum.POINT:
+            notation  =  notation + shapeCount.point;
+            break;
+          case ShapeEnum.CIRCLE:
+            notation  =  notation + shapeCount.circle;
+        }
+        var text =  new fabric.Text(notation, {
+          left: shape.left,
+          top: shape.top  -  25,
+          height:  20,
+          width: 60,
+          fontSize: 16,
+          selectable: false,
+          hasControl: false,
+          fill: 'white'
+        });
+
+        //标注跟随移动
+        shape.on('moving',  function () {
+          text.set({left:  shape.left, top: shape.top  - 20})
+        });
+        canvas.remove(shape);
+        canvas.add(shape, text);
+        //添加统计数据
+        addStatisticsText(notation + '\n' + genStatisticsSting(38.17,  12, 30));
+        canvas.renderAll();
+
+        currentShapeType =  unEnableDraw;
+        isDrawing =  false;
+      }
+
+    })
+
+  }
+
+  function drawRectangle(point) {
+
+    var rect = new fabric.Rect({
+      left: point.x,
+      top: point.y,
+      fill: '',
+      stroke: 'white',
+      hasBorder: false,
+      width: 0,
+      height: 0,
+      cornerSize: 10,
+      cornerStyle: 'circle',
+      hasRotatingPoint: false,
+      cornerColor: 'black',
+      hasControl: false,
+    });
+    canvas.add(rect);
+  }
+
+  function addStatisticsText(content) {
+    var y = 20;
+
+    if (shapeCount.sum > 0) {
+      //初始化化画布时
+      y = y + textArray[shapeCount.sum - 1].height + 5;
+    }
+    var text = new fabric.Text(content, {
+      left: 20,
+      top: y,
+      fontSize: 16,
+      width: 60,
+      selectable: false,
+      fill: 'white',
+      isEditing: false,
+      hasControl:  false,
+    });
+    textArray.push(text);
+    canvas.add(text);
+  }
+
+  //获取温度暂时写死，之后改成ajax获取
+  function genStatisticsSting(max, min, avg) {
+    //  接口请求
+    return 'Max: '+ max + '\nMin: ' + min + '\nAvg: ' + avg
+  }
+
+  function drawShape(type) {
+
+  }
+</script>
+
+<style>
+    body{
+        background-color: floralwhite;
+        font-size: 18px;
+    }
+    #content {
+        display: flex;
+        flex-direction: row;
+        margin-left: 30px;
+    }
+    #shape-toolbox {
+
+    }
+
+</style>
+
+</body>
+</html>

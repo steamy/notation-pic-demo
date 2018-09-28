@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>draw</title>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/1.7.22/fabric.min.js"></script>
+<canvas id="cv"  width="800" height="800"></canvas>
+<script>
+    var canvas = new fabric.Canvas('cv');
+
+    var x = 0; // 鼠标开始移动的位置X
+    var y = 0; // 鼠标开始移动的位置Y
+    var flag = false
+    var tag = 0
+    var shapeDrawing = true
+    var shapes =  []
+    var  notation = []
+
+
+    canvas.on('mouse:down',function (opt) {
+      e = opt.e
+      x = e.offsetX
+      y = e.offsetY
+      if (tag <= 3) {
+        // create a rectangle object
+        var rect = new fabric.Rect({
+          left: e.offsetX,
+          top: e.offsetY,
+          fill: '',
+          stroke: 'black',
+          hasBorder: false,
+          width: 0,
+          height: 0,
+          cornerSize: 10,
+          cornerStyle: 'circle',
+          hasRotatingPoint: false,
+          cornerColor: 'black'
+        });
+
+        // "add" rectangle onto canvas
+        rect.hasControl =  false;
+        canvas.add(rect);
+        flag = true
+      }
+      tag = false
+    });
+    canvas.on('mouse:move', function (opt) {
+      e = opt.e
+      if (flag)  {
+        rect = canvas.item(0);
+        rect.set({width: e.offsetX - x, height: e.offsetY - y})
+      }
+      canvas.renderAll();
+    });
+    canvas.on('mouse:up',function () {
+      flag = false
+      if (shapeDrawing) {
+        rect = canvas.item(0)
+        var textbox = new fabric.Textbox('矩形1', {
+          left: rect.left,
+          top: rect.top  -  20,
+          height:  20,
+          width: rect.width,
+          fontSize: 16,
+          selectable: false
+        })
+        shapes.push(rect)
+        notation.push(textbox)
+        rect.on('moving', function () {
+          textbox.set({left: rect.left, top:rect.top - 20})
+        })
+        canvas.remove(rect)
+        canvas.add(rect)
+        canvas.add(textbox)
+      }
+      shapeDrawing = false
+    });
+
+
+</script>
+</body>
+</html>
